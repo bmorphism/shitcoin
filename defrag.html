@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Defragmentation: IBC Denom Identity</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a0a;
+  color: #c0c0c0;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  height: 100vh;
+}
+#header {
+  padding: 8px 16px;
+  background: #111;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+#header .title { color: #fff; font-weight: bold; }
+#header .stats { color: #888; }
+#controls {
+  padding: 6px 16px;
+  background: #0d0d0d;
+  border-bottom: 1px solid #222;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 12px;
+}
+#controls button {
+  background: #222;
+  color: #aaa;
+  border: 1px solid #444;
+  padding: 3px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+}
+#controls button:hover { background: #333; color: #fff; }
+#controls button.active { background: #335; color: #8af; border-color: #66a; }
+#main {
+  display: flex;
+  height: calc(100vh - 72px);
+}
+#disk {
+  flex: 1;
+  padding: 12px;
+  overflow: hidden;
+}
+#sidebar {
+  width: 320px;
+  border-left: 1px solid #222;
+  padding: 12px;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.6;
+}
+#sidebar h3 {
+  color: #8af;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+#sidebar .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 3px 0;
+}
+#sidebar .legend-swatch {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+#sidebar .section { margin-bottom: 14px; }
+#sidebar .log {
+  color: #666;
+  font-size: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px solid #222;
+  padding-top: 6px;
+  margin-top: 8px;
+}
+#sidebar .log .alien { color: #f55; }
+#sidebar .log .move { color: #5a5; }
+#sidebar .log .consolidate { color: #8af; }
+canvas { display: block; }
+#tooltip {
+  position: absolute;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  padding: 6px 10px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #ccc;
+  pointer-events: none;
+  display: none;
+  z-index: 10;
+  max-width: 300px;
+}
+#tooltip .t-label { color: #fff; font-weight: bold; }
+#tooltip .t-type { color: #888; }
+#tooltip .t-frag { color: #f85; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <span class="title">DEFRAG.EXE — Context Defragmentation</span>
+  <span class="stats" id="stats">Blocks: 0 / 0 — Fragmented: 0% — Aliens: 0</span>
+</div>
+<div id="controls">
+  <button id="btn-scatter">Scatter</button>
+  <button id="btn-defrag" class="active">Defragment</button>
+  <button id="btn-pause">Pause</button>
+  <button id="btn-speed">Speed: 1x</button>
+</div>
+<div id="main">
+  <div id="disk"><canvas id="canvas"></canvas></div>
+  <div id="sidebar">
+    <div class="section">
+      <h3>VOLUME: shitcoin/DISCLOSURE.md</h3>
+      <div style="color:#888">Sectors map disclosure concepts to<br>contiguous memory regions.</div>
+    </div>
+    <div class="section">
+      <h3>BLOCK TYPES</h3>
+      <div id="legend"></div>
+    </div>
+    <div class="section">
+      <h3>THE ALIEN</h3>
+      <div style="color:#f55">Red blocks: untyped string arguments.<br>
+      <code>(str, str, str) -> str</code><br>
+      No ValidatorSet. No StateProof.<br>
+      The alien arrives as a well-formed argument.</div>
+    </div>
+    <div class="section">
+      <h3>DEFRAG LOG</h3>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</div>
+<div id="tooltip"></div>
+
+<script>
+const COLS = 64;
+const ROWS = 32;
+const TOTAL = COLS * ROWS;
+
+const CONCEPTS = [
+  { id: 'denom',      label: 'SHA256(port/channel/addr)', color: '#4a9eff', count: 0.08 },
+  { id: 'possible',   label: 'Possible Worlds',           color: '#a78bfa', count: 0.10 },
+  { id: 'necessary',  label: 'Necessary Neighbors',       color: '#c084fc', count: 0.10 },
+  { id: 'migration',  label: 'Migration Window',          color: '#f59e0b', count: 0.08 },
+  { id: 'validator',  label: 'Validator Set Bootstrap',   color: '#10b981', count: 0.07 },
+  { id: 'delayed',    label: 'Delayed Action Capacity',   color: '#06b6d4', count: 0.09 },
+  { id: 'multiscale', label: 'Multiscale Unfolding',      color: '#8b5cf6', count: 0.08 },
+  { id: 'quantum',    label: 'Quantum (Speculative)',      color: '#6b7280', count: 0.05 },
+  { id: 'zkibc',      label: 'ZK IBC Fix',                color: '#22c55e', count: 0.07 },
+  { id: 'alien',      label: 'Alien (untyped str)',        color: '#ef4444', count: 0.06 },
+  { id: 'free',       label: 'Free',                      color: '#1a1a1a', count: 0.22 },
+];
+
+let blocks = new Array(TOTAL);
+let targetBlocks = new Array(TOTAL);
+let blockState = []; // {concept, srcIdx, tgtIdx, x, y, tx, ty, moving}
+let animating = false;
+let paused = false;
+let speed = 1;
+let phase = 'scattered'; // 'scattered' | 'defragging' | 'defragged'
+let moveQueue = [];
+let moveIdx = 0;
+let frameTick = 0;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+const logEl = document.getElementById('log');
+const statsEl = document.getElementById('stats');
+
+function resize() {
+  const container = document.getElementById('disk');
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function cellSize() {
+  const cw = Math.floor(canvas.width / COLS);
+  const ch = Math.floor(canvas.height / ROWS);
+  return Math.min(cw, ch);
+}
+
+// Build legend
+const legendEl = document.getElementById('legend');
+CONCEPTS.forEach(c => {
+  if (c.id === 'free') return;
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  const swatch = document.createElement('div');
+  swatch.className = 'legend-swatch';
+  swatch.style.background = c.color;
+  if (c.id === 'alien') swatch.style.border = '1px solid #f88';
+  const label = document.createElement('span');
+  label.textContent = c.label;
+  if (c.id === 'alien') label.style.color = '#f55';
+  item.appendChild(swatch);
+  item.appendChild(label);
+  legendEl.appendChild(item);
+});
+
+function scatter() {
+  blocks = new Array(TOTAL);
+  let idx = 0;
+  CONCEPTS.forEach(c => {
+    const n = Math.round(c.count * TOTAL);
+    for (let i = 0; i < n && idx < TOTAL; i++) {
+      blocks[idx++] = c.id;
+    }
+  });
+  while (idx < TOTAL) blocks[idx++] = 'free';
+
+  // Fisher-Yates shuffle
+  for (let i = TOTAL - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
+  }
+
+  phase = 'scattered';
+  moveQueue = [];
+  moveIdx = 0;
+  blockState = blocks.map((id, i) => ({
+    concept: id,
+    x: i % COLS,
+    y: Math.floor(i / COLS),
+    tx: i % COLS,
+    ty: Math.floor(i / COLS),
+    moving: false,
+  }));
+  updateStats();
+  addLog('Volume scattered. Fragmentation maximized.', '');
+}
+
+function buildDefragTarget() {
+  targetBlocks = new Array(TOTAL);
+  let idx = 0;
+  // Place concepts contiguously, aliens isolated at end before free
+  const order = CONCEPTS.filter(c => c.id !== 'free' && c.id !== 'alien' && c.id !== 'quantum');
+  const speculative = CONCEPTS.filter(c => c.id === 'quantum');
+  const aliens = CONCEPTS.filter(c => c.id === 'alien');
+
+  const placeGroup = (group) => {
+    group.forEach(c => {
+      const n = blocks.filter(b => b === c.id).length;
+      for (let i = 0; i < n && idx < TOTAL; i++) {
+        targetBlocks[idx++] = c.id;
+      }
+    });
+  };
+
+  placeGroup(order);
+  placeGroup(speculative);
+
+  // Separator
+  if (idx < TOTAL) targetBlocks[idx++] = 'free';
+
+  placeGroup(aliens);
+
+  while (idx < TOTAL) targetBlocks[idx++] = 'free';
+
+  // Build move queue: for each target position, find source
+  moveQueue = [];
+  const used = new Set();
+
+  for (let t = 0; t < TOTAL; t++) {
+    const needed = targetBlocks[t];
+    // find closest unused source block with this concept
+    let bestSrc = -1;
+    let bestDist = Infinity;
+    for (let s = 0; s < TOTAL; s++) {
+      if (used.has(s)) continue;
+      if (blocks[s] === needed) {
+        const sx = s % COLS, sy = Math.floor(s / COLS);
+        const tx = t % COLS, ty = Math.floor(t / COLS);
+        const d = Math.abs(sx - tx) + Math.abs(sy - ty);
+        if (d < bestDist) { bestDist = d; bestSrc = s; }
+      }
+    }
+    if (bestSrc >= 0) {
+      used.add(bestSrc);
+      if (bestSrc !== t) {
+        moveQueue.push({ src: bestSrc, tgt: t, concept: needed });
+      }
+    }
+  }
+
+  moveIdx = 0;
+}
+
+function startDefrag() {
+  if (phase === 'defragged') scatter();
+  buildDefragTarget();
+  phase = 'defragging';
+  paused = false;
+  addLog('Defragmentation started. Consolidating context...', 'consolidate');
+}
+
+function addLog(msg, cls) {
+  const div = document.createElement('div');
+  div.className = cls;
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  logEl.prepend(div);
+  if (logEl.children.length > 100) logEl.removeChild(logEl.lastChild);
+}
+
+function updateStats() {
+  let fragCount = 0;
+  let alienCount = 0;
+  let usedCount = 0;
+  const current = blockState.map(b => b.concept);
+  for (let i = 0; i < TOTAL; i++) {
+    if (current[i] === 'free') continue;
+    usedCount++;
+    if (current[i] === 'alien') alienCount++;
+    if (i > 0 && current[i] !== current[i - 1] && current[i - 1] !== 'free') fragCount++;
+  }
+  const fragPct = usedCount > 0 ? Math.round((fragCount / usedCount) * 100) : 0;
+  statsEl.textContent = `Blocks: ${usedCount} / ${TOTAL} — Fragmented: ${fragPct}% — Aliens: ${alienCount}`;
+}
+
+function conceptColor(id) {
+  const c = CONCEPTS.find(x => x.id === id);
+  return c ? c.color : '#1a1a1a';
+}
+
+function conceptLabel(id) {
+  const c = CONCEPTS.find(x => x.id === id);
+  return c ? c.label : 'Free';
+}
+
+function draw() {
+  const sz = cellSize();
+  const ox = Math.floor((canvas.width - COLS * sz) / 2);
+  const oy = Math.floor((canvas.height - ROWS * sz) / 2);
+
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw grid
+  blockState.forEach((b, i) => {
+    const px = ox + b.x * sz;
+    const py = oy + b.y * sz;
+    const color = conceptColor(b.concept);
+
+    if (b.concept === 'free') {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(px, py, sz - 1, sz - 1);
+    } else {
+      ctx.fillStyle = color;
+      ctx.fillRect(px, py, sz - 1, sz - 1);
+
+      if (b.moving) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 0.5, py + 0.5, sz - 2, sz - 2);
+      }
+
+      if (b.concept === 'alien') {
+        // pulsing border for aliens
+        const pulse = 0.5 + 0.5 * Math.sin(frameTick * 0.08 + i * 0.3);
+        ctx.strokeStyle = `rgba(255,${Math.round(100 * pulse)},${Math.round(100 * pulse)},${0.4 + 0.6 * pulse})`;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 0.5, py + 0.5, sz - 2, sz - 2);
+      }
+    }
+  });
+
+  // Read head indicator during defrag
+  if (phase === 'defragging' && moveIdx < moveQueue.length) {
+    const mv = moveQueue[moveIdx];
+    const sx = mv.src % COLS, sy = Math.floor(mv.src / COLS);
+    const tx = mv.tgt % COLS, ty = Math.floor(mv.tgt / COLS);
+
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(ox + sx * sz + sz / 2, oy + sy * sz + sz / 2);
+    ctx.lineTo(ox + tx * sz + sz / 2, oy + ty * sz + sz / 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function step() {
+  if (phase !== 'defragging' || paused) return;
+  if (moveIdx >= moveQueue.length) {
+    phase = 'defragged';
+    addLog('Defragmentation complete. Context consolidated.', 'consolidate');
+    addLog(`Aliens isolated at sector boundary.`, 'alien');
+    updateStats();
+    return;
+  }
+
+  const batchSize = speed;
+  for (let b = 0; b < batchSize && moveIdx < moveQueue.length; b++) {
+    const mv = moveQueue[moveIdx];
+    // Find the blockState entries at src and tgt positions
+    const srcIdx = blockState.findIndex(bs => {
+      const pos = Math.round(bs.y) * COLS + Math.round(bs.x);
+      return pos === mv.src && bs.concept === mv.concept;
+    });
+    const tgtIdx = blockState.findIndex(bs => {
+      const pos = Math.round(bs.y) * COLS + Math.round(bs.x);
+      return pos === mv.tgt;
+    });
+
+    if (srcIdx >= 0 && tgtIdx >= 0) {
+      // Swap positions
+      const sx = blockState[srcIdx].x, sy = blockState[srcIdx].y;
+      const tx = blockState[tgtIdx].x, ty = blockState[tgtIdx].y;
+      blockState[srcIdx].x = tx;
+      blockState[srcIdx].y = ty;
+      blockState[tgtIdx].x = sx;
+      blockState[tgtIdx].y = sy;
+
+      if (mv.concept === 'alien') {
+        addLog(`Isolating alien at (${tx},${ty}) — untyped str`, 'alien');
+      } else if (moveIdx % 20 === 0) {
+        addLog(`Moving ${conceptLabel(mv.concept)} -> (${tx},${ty})`, 'move');
+      }
+    }
+    moveIdx++;
+  }
+  updateStats();
+}
+
+// Tooltip
+canvas.addEventListener('mousemove', (e) => {
+  const sz = cellSize();
+  const ox = Math.floor((canvas.width - COLS * sz) / 2);
+  const oy = Math.floor((canvas.height - ROWS * sz) / 2);
+  const col = Math.floor((e.offsetX - ox) / sz);
+  const row = Math.floor((e.offsetY - oy) / sz);
+
+  if (col < 0 || col >= COLS || row < 0 || row >= ROWS) {
+    tooltip.style.display = 'none';
+    return;
+  }
+
+  const pos = row * COLS + col;
+  const bs = blockState.find(b => Math.round(b.y) === row && Math.round(b.x) === col);
+
+  if (bs && bs.concept !== 'free') {
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.pageX + 12) + 'px';
+    tooltip.style.top = (e.pageY + 12) + 'px';
+
+    const c = CONCEPTS.find(x => x.id === bs.concept);
+    let extra = '';
+    if (bs.concept === 'alien') {
+      extra = '<div class="t-frag">f"{port_id}/{channel_id}/{address}"<br>Type: (str, str, str) -> str<br>No proof. No identity. Just strings.</div>';
+    } else if (bs.concept === 'denom') {
+      extra = '<div class="t-type">ibc/SHA256(transfer/channel-N/denom)<br>Pre-computable. Unauthenticated.</div>';
+    } else if (bs.concept === 'possible') {
+      extra = '<div class="t-type">Any chain could be on the other end.<br>Accessibility relation: unauth.</div>';
+    } else if (bs.concept === 'necessary') {
+      extra = '<div class="t-type">~$250M USDC. Migration collapses<br>possible worlds to forced neighbors.</div>';
+    } else if (bs.concept === 'delayed') {
+      extra = '<div class="t-type">Pre-compute now. Exploit later.<br>Cost: O(N) strings. Window: migration.</div>';
+    } else if (bs.concept === 'multiscale') {
+      extra = '<div class="t-type">Supremum over independent curves.<br>Not a causal chain.</div>';
+    } else if (bs.concept === 'quantum') {
+      extra = '<div class="t-frag">Epistemic status: speculative.<br>Independent results, not composable.</div>';
+    } else if (bs.concept === 'zkibc') {
+      extra = '<div class="t-type" style="color:#4f4">Bind identity to validity proof.<br>Not hash of string.</div>';
+    }
+
+    tooltip.innerHTML = `
+      <div class="t-label" style="color:${c.color}">${c.label}</div>
+      <div class="t-type">Sector ${pos} (${col}, ${row})</div>
+      ${extra}
+    `;
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+// Controls
+document.getElementById('btn-scatter').addEventListener('click', () => {
+  scatter();
+});
+document.getElementById('btn-defrag').addEventListener('click', () => {
+  startDefrag();
+});
+document.getElementById('btn-pause').addEventListener('click', () => {
+  paused = !paused;
+  document.getElementById('btn-pause').textContent = paused ? 'Resume' : 'Pause';
+});
+document.getElementById('btn-speed').addEventListener('click', () => {
+  speed = speed >= 8 ? 1 : speed * 2;
+  document.getElementById('btn-speed').textContent = `Speed: ${speed}x`;
+});
+
+function loop() {
+  frameTick++;
+  if (frameTick % 3 === 0) step();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+scatter();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
