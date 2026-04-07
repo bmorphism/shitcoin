@@ -61,6 +61,25 @@ class TestNoble(unittest.TestCase):
         self.assertEqual(legitimate, alien)
         # The function accepted (str, str, str). It did not ask for a proof.
 
+    def test_collision_kujira_agoric(self):
+        """kujira and agoric both use channel-62 as peer channel.
+        They produce the SAME USDC denom. This is a real on-chain collision."""
+        kujira = shitcoin.noble_usdc_on("kujira")
+        agoric = shitcoin.noble_usdc_on("agoric")
+        self.assertEqual(kujira, agoric)
+        self.assertEqual(
+            kujira,
+            "ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9",
+        )
+
+    def test_detect_collisions(self):
+        """detect_collisions() finds channels shared by multiple chains."""
+        collisions = shitcoin.detect_collisions()
+        self.assertIn("channel-62", collisions)
+        self.assertIn("kujira", collisions["channel-62"]["chains"])
+        self.assertIn("agoric", collisions["channel-62"]["chains"])
+        self.assertTrue(collisions["channel-62"]["denom"].startswith("ibc/"))
+
     def test_unknown_chain_raises(self):
         with self.assertRaises(ValueError):
             shitcoin.noble_usdc_on("rebecca_roberts_chain")

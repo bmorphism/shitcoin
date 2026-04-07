@@ -10,14 +10,23 @@ The hash doesn't know who is on the other end. It only knows the string.
 import hashlib
 
 NOBLE_CHANNELS = {
-    "osmosis":   {"noble_channel": "channel-1",  "peer_channel": "channel-750", "chain_id": "osmosis-1"},
-    "cosmoshub": {"noble_channel": "channel-4",  "peer_channel": "channel-536", "chain_id": "cosmoshub-4"},
-    "neutron":   {"noble_channel": "channel-18", "peer_channel": "channel-30",  "chain_id": "neutron-1"},
-    "stargaze":  {"noble_channel": "channel-11", "peer_channel": "channel-204", "chain_id": "stargaze-1"},
-    "sei":       {"noble_channel": "channel-39", "peer_channel": "channel-45",  "chain_id": "sei-pacific-1"},
-    "dydx":      {"noble_channel": "channel-33", "peer_channel": "channel-0",   "chain_id": "dydx-mainnet-1"},
-    "injective": {"noble_channel": "channel-31", "peer_channel": "channel-148", "chain_id": "injective-1"},
-    "terra2":    {"noble_channel": "channel-30", "peer_channel": "channel-253", "chain_id": "phoenix-1"},
+    "osmosis":       {"noble_channel": "channel-1",  "peer_channel": "channel-750", "chain_id": "osmosis-1"},
+    "cosmoshub":     {"noble_channel": "channel-4",  "peer_channel": "channel-536", "chain_id": "cosmoshub-4"},
+    "neutron":       {"noble_channel": "channel-18", "peer_channel": "channel-30",  "chain_id": "neutron-1"},
+    "stargaze":      {"noble_channel": "channel-11", "peer_channel": "channel-204", "chain_id": "stargaze-1"},
+    "sei":           {"noble_channel": "channel-39", "peer_channel": "channel-45",  "chain_id": "sei-pacific-1"},
+    "dydx":          {"noble_channel": "channel-33", "peer_channel": "channel-0",   "chain_id": "dydx-mainnet-1"},
+    "injective":     {"noble_channel": "channel-31", "peer_channel": "channel-148", "chain_id": "injective-1"},
+    "terra2":        {"noble_channel": "channel-30", "peer_channel": "channel-253", "chain_id": "phoenix-1"},
+    "kujira":        {"noble_channel": "channel-2",  "peer_channel": "channel-62",  "chain_id": "kaiyo-1"},
+    "juno":          {"noble_channel": "channel-3",  "peer_channel": "channel-224", "chain_id": "juno-1"},
+    "evmos":         {"noble_channel": "channel-7",  "peer_channel": "channel-64",  "chain_id": "evmos_9001-2"},
+    "archway":       {"noble_channel": "channel-12", "peer_channel": "channel-29",  "chain_id": "archway-1"},
+    "secretnetwork": {"noble_channel": "channel-17", "peer_channel": "channel-88",  "chain_id": "secret-4"},
+    "agoric":        {"noble_channel": "channel-21", "peer_channel": "channel-62",  "chain_id": "agoric-3"},
+    "persistence":   {"noble_channel": "channel-36", "peer_channel": "channel-132", "chain_id": "core-1"},
+    "dymension":     {"noble_channel": "channel-19", "peer_channel": "channel-6",   "chain_id": "dymension_1100-1"},
+    "babylon":       {"noble_channel": "channel-81", "peer_channel": "channel-1",   "chain_id": "bbn-1"},
 }
 
 NOBLE_USDC_DENOM = "uusdc"
@@ -78,6 +87,28 @@ def precompute_future(n=100):
     }
 
 
+def detect_collisions():
+    """Find registered chains that share the same USDC denom.
+
+    Two chains using the same peer_channel number produce identical
+    ibc/SHA256(...) denominations. This is not theoretical — these
+    collisions exist on-chain.
+    """
+    from collections import defaultdict
+    by_channel = defaultdict(list)
+    for chain_name, info in NOBLE_CHANNELS.items():
+        by_channel[info["peer_channel"]].append(chain_name)
+
+    collisions = {}
+    for channel, chains in by_channel.items():
+        if len(chains) > 1:
+            collisions[channel] = {
+                "chains": chains,
+                "denom": ibc_denom("transfer", channel, NOBLE_USDC_DENOM),
+            }
+    return collisions
+
+
 if __name__ == "__main__":
     print("Noble USDC denoms on peer chains (pre-computed)")
     print("=" * 72)
@@ -98,6 +129,17 @@ if __name__ == "__main__":
     future = precompute_future(10)
     for ch, denom in future.items():
         print(f"  {ch:12s} -> {denom}")
+
+    collisions = detect_collisions()
+    if collisions:
+        print()
+        print("=" * 72)
+        print(f"COLLISIONS DETECTED: {len(collisions)} peer channels shared by multiple chains")
+        print()
+        for channel, data in collisions.items():
+            print(f"  {channel}: {', '.join(data['chains'])}")
+            print(f"    denom: {data['denom']}")
+            print()
 
     print()
     print("The hash does not know who is on the other end.")
