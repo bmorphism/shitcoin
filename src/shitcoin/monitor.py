@@ -231,6 +231,62 @@ def fetch_validators(api=DEFAULT_API):
     }
 
 
+def risk_score(scan_result, validator_result=None):
+    """Compute a collision risk score for the Noble IBC ecosystem.
+
+    Factors:
+    1. Collision density: what fraction of peer channels are colliding
+    2. Mega-collision severity: how large the biggest groups are
+    3. Repeat offenders: chains appearing in multiple collision groups
+    4. Validator concentration: how few entities needed to collude
+
+    Returns a dict with component scores and a composite 0-100 rating.
+    Higher = more dangerous.
+    """
+    collisions = scan_result.get("collisions", {})
+    total_peers = scan_result.get("unique_peer_channels", 1)
+    max_size = scan_result.get("max_collision_size", 0)
+
+    # Factor 1: collision density (0-25)
+    collision_ratio = len(collisions) / max(total_peers, 1)
+    density_score = min(25, collision_ratio * 75)
+
+    # Factor 2: mega-collision severity (0-25)
+    # 18 chains sharing one denom is catastrophic
+    severity_score = min(25, (max_size / 20) * 25)
+
+    # Factor 3: repeat offenders (0-25)
+    chain_appearances = {}
+    for data in collisions.values():
+        for chain in data.get("chains", []):
+            chain_appearances[chain] = chain_appearances.get(chain, 0) + 1
+    repeaters = sum(1 for c in chain_appearances.values() if c > 1)
+    repeater_score = min(25, (repeaters / max(len(chain_appearances), 1)) * 50)
+
+    # Factor 4: validator concentration (0-25)
+    val_score = 0
+    if validator_result:
+        n = validator_result.get("count", 100)
+        collude = validator_result.get("collude_to_control", 34)
+        equal = validator_result.get("equal_weight", False)
+        # Fewer validators to collude = higher risk
+        val_score = min(25, (1 - collude / max(n, 1)) * 50)
+        if equal:
+            val_score = min(25, val_score + 5)  # equal weight = easier coordination
+
+    composite = density_score + severity_score + repeater_score + val_score
+
+    return {
+        "composite": round(composite, 1),
+        "density": round(density_score, 1),
+        "severity": round(severity_score, 1),
+        "repeaters": round(repeater_score, 1),
+        "validator_risk": round(val_score, 1),
+        "repeat_offender_chains": {k: v for k, v in chain_appearances.items() if v > 1},
+        "rating": "CRITICAL" if composite >= 70 else "HIGH" if composite >= 50 else "MEDIUM" if composite >= 30 else "LOW",
+    }
+
+
 def save_baseline(result, path="noble_baseline.json"):
     """Save a scan result as JSON baseline for future diffs."""
     with open(path, "w") as f:

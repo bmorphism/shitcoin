@@ -1,6 +1,6 @@
 import unittest
 
-from shitcoin.monitor import ibc_denom, diff_collisions, fetch_validators
+from shitcoin.monitor import ibc_denom, diff_collisions, fetch_validators, risk_score
 
 
 class TestMonitor(unittest.TestCase):
@@ -66,3 +66,20 @@ class TestMonitor(unittest.TestCase):
         diff = diff_collisions(baseline, current)
         self.assertIn("channel-0", diff["grown"])
         self.assertTrue(any("GROWING" in a for a in diff["alerts"]))
+
+    def test_risk_score_critical(self):
+        """The real Noble numbers should produce CRITICAL rating."""
+        scan = {
+            "unique_peer_channels": 69,
+            "max_collision_size": 18,
+            "collisions": {
+                "channel-0": {"count": 18, "chains": ["dydx-mainnet-1", "hyve_7847-1", "viexchain-1"]},
+                "channel-1": {"count": 16, "chains": ["bbn-1", "hyve_7847-1", "viexchain-1"]},
+                "channel-2": {"count": 13, "chains": ["hyve_7847-1", "viexchain-1"]},
+            },
+        }
+        validators = {"count": 15, "collude_to_control": 5, "equal_weight": True}
+        r = risk_score(scan, validators)
+        self.assertEqual(r["rating"], "CRITICAL")
+        self.assertIn("hyve_7847-1", r["repeat_offender_chains"])
+        self.assertIn("viexchain-1", r["repeat_offender_chains"])
