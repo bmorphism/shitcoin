@@ -1,6 +1,6 @@
 import unittest
 
-from shitcoin.monitor import ibc_denom, scan_collisions
+from shitcoin.monitor import ibc_denom, diff_collisions
 
 
 class TestMonitor(unittest.TestCase):
@@ -23,3 +23,37 @@ class TestMonitor(unittest.TestCase):
             ibc_denom("transfer", "channel-0", "uusdc"),
             "ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5",
         )
+
+    def test_diff_no_change(self):
+        baseline = {"total_transfer": 157, "collisions": {
+            "channel-0": {"count": 18, "noble_channels": ["ch-33"]},
+        }}
+        current = {"total_transfer": 157, "collisions": {
+            "channel-0": {"count": 18, "noble_channels": ["ch-33"]},
+        }}
+        diff = diff_collisions(baseline, current)
+        self.assertEqual(diff["new_channels"], 0)
+        self.assertEqual(len(diff["new_collisions"]), 0)
+        self.assertEqual(len(diff["grown"]), 0)
+
+    def test_diff_new_collision(self):
+        baseline = {"total_transfer": 157, "collisions": {}}
+        current = {"total_transfer": 160, "collisions": {
+            "channel-99": {"count": 2, "noble_channels": ["ch-500", "ch-501"],
+                           "usdc_denom": "ibc/DEAD..."},
+        }}
+        diff = diff_collisions(baseline, current)
+        self.assertEqual(diff["new_channels"], 3)
+        self.assertIn("channel-99", diff["new_collisions"])
+        self.assertTrue(any("NEW COLLISION" in a for a in diff["alerts"]))
+
+    def test_diff_growing(self):
+        baseline = {"total_transfer": 157, "collisions": {
+            "channel-0": {"count": 18, "noble_channels": []},
+        }}
+        current = {"total_transfer": 159, "collisions": {
+            "channel-0": {"count": 20, "noble_channels": []},
+        }}
+        diff = diff_collisions(baseline, current)
+        self.assertIn("channel-0", diff["grown"])
+        self.assertTrue(any("GROWING" in a for a in diff["alerts"]))

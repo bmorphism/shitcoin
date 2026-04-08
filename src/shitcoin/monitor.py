@@ -145,26 +145,129 @@ def scan_collisions(api=DEFAULT_API, resolve_chains=True, verbose=False):
     }
 
 
+def diff_collisions(baseline, current):
+    """Compare two scan results. Returns new/grown/shrunk collision groups.
+
+    Args:
+        baseline: previous scan_collisions() result
+        current: fresh scan_collisions() result
+
+    Returns:
+        {
+            "new_channels": int,       # transfer channels added since baseline
+            "new_collisions": [...],   # peer channels that are newly colliding
+            "grown": [...],            # existing collisions that gained members
+            "shrunk": [...],           # existing collisions that lost members
+            "alerts": [...],           # human-readable alert strings
+        }
+    """
+    b_col = baseline.get("collisions", {})
+    c_col = current.get("collisions", {})
+
+    new_collisions = []
+    grown = []
+    shrunk = []
+    alerts = []
+
+    new_ch = current["total_transfer"] - baseline["total_transfer"]
+    if new_ch > 0:
+        alerts.append(f"{new_ch} new transfer channels since baseline")
+
+    for peer_ch, data in c_col.items():
+        if peer_ch not in b_col:
+            new_collisions.append(peer_ch)
+            chains_str = ", ".join(data.get("chains", data["noble_channels"]))
+            alerts.append(
+                f"NEW COLLISION: {peer_ch} ({data['count']} chains: {chains_str}) "
+                f"denom={data['usdc_denom'][:24]}..."
+            )
+        elif data["count"] > b_col[peer_ch]["count"]:
+            grown.append(peer_ch)
+            delta = data["count"] - b_col[peer_ch]["count"]
+            alerts.append(
+                f"GROWING: {peer_ch} gained {delta} chain(s), "
+                f"now {data['count']} total"
+            )
+
+    for peer_ch, data in b_col.items():
+        if peer_ch in c_col and c_col[peer_ch]["count"] < data["count"]:
+            shrunk.append(peer_ch)
+
+    return {
+        "new_channels": new_ch,
+        "new_collisions": new_collisions,
+        "grown": grown,
+        "shrunk": shrunk,
+        "alerts": alerts,
+    }
+
+
+def save_baseline(result, path="noble_baseline.json"):
+    """Save a scan result as JSON baseline for future diffs."""
+    with open(path, "w") as f:
+        json.dump(result, f, indent=2)
+
+
+def load_baseline(path="noble_baseline.json"):
+    """Load a previously saved baseline."""
+    with open(path) as f:
+        return json.load(f)
+
+
 if __name__ == "__main__":
+    import sys
+    import os
+
+    mode = sys.argv[1] if len(sys.argv) > 1 else "scan"
+    baseline_path = os.environ.get("NOBLE_BASELINE", "noble_baseline.json")
+
     print("Noble IBC Collision Monitor")
     print("=" * 72)
-    print()
 
-    result = scan_collisions(verbose=True)
-
-    print()
-    print(f"Transfer channels: {result['total_transfer']} ({result['transfer_open']} open)")
-    print(f"Unique peer channels: {result['unique_peer_channels']}")
-    print(f"Collision groups: {result['collision_groups']}")
-    print(f"Largest collision: {result['max_collision_size']} chains")
-    print()
-
-    for peer_ch, data in result["collisions"].items():
-        print(f"  {peer_ch} ({data['count']} chains):")
-        print(f"    denom: {data['usdc_denom']}")
-        print(f"    noble: {', '.join(data['noble_channels'])}")
-        if "chains" in data:
-            print(f"    chains: {', '.join(data['chains'])}")
+    if mode == "scan":
+        # Full scan with chain resolution
+        result = scan_collisions(verbose=True)
         print()
+        print(f"Transfer channels: {result['total_transfer']} ({result['transfer_open']} open)")
+        print(f"Unique peer channels: {result['unique_peer_channels']}")
+        print(f"Collision groups: {result['collision_groups']}")
+        print(f"Largest collision: {result['max_collision_size']} chains")
+        print()
+        for peer_ch, data in result["collisions"].items():
+            print(f"  {peer_ch} ({data['count']} chains):")
+            print(f"    denom: {data['usdc_denom']}")
+            print(f"    noble: {', '.join(data['noble_channels'])}")
+            if "chains" in data:
+                print(f"    chains: {', '.join(data['chains'])}")
+            print()
+        save_baseline(result, baseline_path)
+        print(f"Baseline saved to {baseline_path}")
 
+    elif mode == "diff":
+        # Quick scan (no chain resolution) and diff against baseline
+        if not os.path.exists(baseline_path):
+            print(f"No baseline at {baseline_path}. Run 'scan' first.")
+            sys.exit(1)
+        baseline = load_baseline(baseline_path)
+        current = scan_collisions(resolve_chains=False, verbose=True)
+        diff = diff_collisions(baseline, current)
+        print()
+        if diff["alerts"]:
+            for alert in diff["alerts"]:
+                print(f"  ALERT: {alert}")
+        else:
+            print("  No changes since baseline.")
+        print()
+        print(f"  New collisions: {len(diff['new_collisions'])}")
+        print(f"  Growing groups: {len(diff['grown'])}")
+        print(f"  New channels: {diff['new_channels']}")
+
+    elif mode == "quick":
+        # Fast scan without chain resolution
+        result = scan_collisions(resolve_chains=False, verbose=False)
+        print(f"\n{result['total_transfer']} channels, {result['collision_groups']} collisions, max={result['max_collision_size']}")
+        for peer_ch, data in list(result["collisions"].items())[:10]:
+            print(f"  {peer_ch}: {data['count']} -> {data['usdc_denom'][:28]}...")
+
+    print()
     print("The hash does not know who is on the other end.")

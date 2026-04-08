@@ -35,6 +35,31 @@ Type "help", "copyright", "credits" or "license" for more information.
 Follow the steps from your [permissionless DEX / AMM of choice](https://docs.osmosis.zone/integrate/frontend.html#how-to-add-an-asset-onto-the-osmosis-assets-page) to list the asset and use the denomination value obtained `ibc/...` with quiet confidence. At this poin you can drop your new `$TOKEN` to your frens and aligned fellow travelers as you celebrate the launch by [finding something fun to watch on C-SPAN](https://www.c-span.org/video/?516464-1/house-hearing-financial-innovation-digital-currency), describe what you are up to and encourage them to ape in.
 
 If stuck, help yourself to some copy-pasta w/ existing `cw20` and submit all the necessary PRs after thoughtfully adjusting [theirs](https://github.com/osmosis-labs/osmosis-frontend/pulls?q=is%3Apr+is%3Aclosed+RAC).
+### Noble USDC Collision Monitor
+
+The same SHA256 mechanism that computes cw20 denoms also governs Noble USDC on every IBC chain. The hash doesn't know who's on the other end.
+
+```python
+from shitcoin.noble import noble_usdc_on, detect_collisions
+
+# What does USDC look like on dYdX?
+noble_usdc_on("dydx")
+# => 'ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5'
+
+# 18 chains share this exact denom. The hash cannot tell them apart.
+detect_collisions()
+# => {'channel-62': {'chains': ['kujira', 'agoric'], 'denom': 'ibc/FE98AAD6...'}}
+```
+
+Run the live collision monitor:
+```
+python -m shitcoin.monitor quick    # fast scan, no chain resolution
+python -m shitcoin.monitor scan     # full scan with chain identity resolution
+python -m shitcoin.monitor diff     # diff against saved baseline
+```
+
+**Live census (2026-04-08):** 157 transfer channels, 24 collision groups, 18 chains sharing channel-0.
+
 ### Profit!1!
 Swap tokens with aligned DAOs / chains, create LPs to allow for the unencumbered flow of value between you and incentivize participation by dispensing rewards at each epoch.
 

@@ -1,0 +1,264 @@
+{
+  "total_transfer": 157,
+  "transfer_open": 152,
+  "unique_peer_channels": 69,
+  "collision_groups": 24,
+  "max_collision_size": 18,
+  "collisions": {
+    "channel-0": {
+      "count": 18,
+      "noble_channels": [
+        "channel-106",
+        "channel-107",
+        "channel-109",
+        "channel-134",
+        "channel-135",
+        "channel-153",
+        "channel-154",
+        "channel-155",
+        "channel-160",
+        "channel-164",
+        "channel-168",
+        "channel-23",
+        "channel-24",
+        "channel-28",
+        "channel-317",
+        "channel-33",
+        "channel-422",
+        "channel-99"
+      ],
+      "usdc_denom": "ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5"
+    },
+    "channel-1": {
+      "count": 16,
+      "noble_channels": [
+        "channel-101",
+        "channel-102",
+        "channel-103",
+        "channel-104",
+        "channel-108",
+        "channel-123",
+        "channel-132",
+        "channel-161",
+        "channel-25",
+        "channel-318",
+        "channel-337",
+        "channel-423",
+        "channel-5",
+        "channel-80",
+        "channel-81",
+        "channel-90"
+      ],
+      "usdc_denom": "ibc/65D0BEC6DAD96C7F5043D1E54E54B6BB5D5B3AEC3FF6CEBB75B9E059F3580EA3"
+    },
+    "channel-2": {
+      "count": 13,
+      "noble_channels": [
+        "channel-110",
+        "channel-113",
+        "channel-117",
+        "channel-158",
+        "channel-162",
+        "channel-165",
+        "channel-205",
+        "channel-426",
+        "channel-67",
+        "channel-71",
+        "channel-72",
+        "channel-74",
+        "channel-89"
+      ],
+      "usdc_denom": "ibc/F082B65C88E4B6D5EF1DB243CDA1D331D002759E938A0F5CD3FFDC5D53B3E349"
+    },
+    "channel-4": {
+      "count": 7,
+      "noble_channels": [
+        "channel-112",
+        "channel-152",
+        "channel-159",
+        "channel-32",
+        "channel-42",
+        "channel-430",
+        "channel-84"
+      ],
+      "usdc_denom": "ibc/BFF0D3805B50D93E2FA5C0B2DDF7E0B30A631076CD80BC12A48C0E95404B4A41"
+    },
+    "channel-3": {
+      "count": 7,
+      "noble_channels": [
+        "channel-129",
+        "channel-130",
+        "channel-163",
+        "channel-175",
+        "channel-377",
+        "channel-52",
+        "channel-95"
+      ],
+      "usdc_denom": "ibc/6490A7EAB61059BFC1CDDEB05917DD70BDF3A611654162A1A47DB930D40D8AF4"
+    },
+    "channel-9": {
+      "count": 5,
+      "noble_channels": [
+        "channel-100",
+        "channel-105",
+        "channel-122",
+        "channel-41",
+        "channel-487"
+      ],
+      "usdc_denom": "ibc/295548A78785A1007F232DE286149A6FF512F180AF5657780FC89C009E2C348F"
+    },
+    "channel-5": {
+      "count": 5,
+      "noble_channels": [
+        "channel-136",
+        "channel-432",
+        "channel-78",
+        "channel-79",
+        "channel-87"
+      ],
+      "usdc_denom": "ibc/BFAAB7870A9AAABF64A7366DAAA0B8E5065EAA1FCE762F45677DC24BE796EF65"
+    },
+    "channel-13": {
+      "count": 4,
+      "noble_channels": [
+        "channel-119",
+        "channel-147",
+        "channel-172",
+        "channel-47"
+      ],
+      "usdc_denom": "ibc/B9E4FD154C92D3A23BEA029906C4C5FF2FE74CB7E3A058290B77197A263CF88B"
+    },
+    "channel-38": {
+      "count": 3,
+      "noble_channels": [
+        "channel-0",
+        "channel-170",
+        "channel-44"
+      ],
+      "usdc_denom": "ibc/F47D6F6C38DC1B5B72FFB71CC4D8A12FC4C57A5A79BAFA65286723D56B85197D"
+    },
+    "channel-62": {
+      "count": 3,
+      "noble_channels": [
+        "channel-2",
+        "channel-21",
+        "channel-54"
+      ],
+      "usdc_denom": "ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9"
+    },
+    "channel-6": {
+      "count": 3,
+      "noble_channels": [
+        "channel-251",
+        "channel-443",
+        "channel-62"
+      ],
+      "usdc_denom": "ibc/B3504E092456BA618CC28AC671A71FB08C6CA0FD0BE7C8A5B5A3E2DD933CC9E4"
+    },
+    "channel-7": {
+      "count": 3,
+      "noble_channels": [
+        "channel-26",
+        "channel-55",
+        "channel-64"
+      ],
+      "usdc_denom": "ibc/7C0807A56073C4A27B0DE1C21BA3EB75DF75FD763F4AD37BC159917FC01145F0"
+    },
+    "channel-12": {
+      "count": 2,
+      "noble_channels": [
+        "channel-116",
+        "channel-146"
+      ],
+      "usdc_denom": "ibc/2180E84E20F5679FCC760D8C165B60F42065DEF7F46A72B447CFF1B7DC6C0A65"
+    },
+    "channel-64": {
+      "count": 2,
+      "noble_channels": [
+        "channel-118",
+        "channel-7"
+      ],
+      "usdc_denom": "ibc/35357FE55D81D88054E135529BB2AEB1BB20D207292775A19BD82D83F27BE9B4"
+    },
+    "channel-29": {
+      "count": 2,
+      "noble_channels": [
+        "channel-12",
+        "channel-16"
+      ],
+      "usdc_denom": "ibc/43897B9739BD63E3A08A88191999C632E052724AB96BD4C74AE31375C991F48D"
+    },
+    "channel-8": {
+      "count": 2,
+      "noble_channels": [
+        "channel-120",
+        "channel-27"
+      ],
+      "usdc_denom": "ibc/39549F06486BACA7494C9ACDD53CDD30AA9E723AB657674DBD388F867B61CA7B"
+    },
+    "channel-14": {
+      "count": 2,
+      "noble_channels": [
+        "channel-148",
+        "channel-94"
+      ],
+      "usdc_denom": "ibc/8AF69BC1E1D72B447738B50C28B382F62F2AF65DE303021E45C0B7C851B4B2E1"
+    },
+    "channel-37": {
+      "count": 2,
+      "noble_channels": [
+        "channel-169",
+        "channel-43"
+      ],
+      "usdc_denom": "ibc/B90825FF57A70109217065F9BB1F61D4C7B2520708304DF356FB7E41E4944EAD"
+    },
+    "channel-30": {
+      "count": 2,
+      "noble_channels": [
+        "channel-18",
+        "channel-19"
+      ],
+      "usdc_denom": "ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81"
+    },
+    "channel-148": {
+      "count": 2,
+      "noble_channels": [
+        "channel-31",
+        "channel-35"
+      ],
+      "usdc_denom": "ibc/2CBC2EA121AE42563B08028466F37B600F2D7D4282342DE938283CC3FB2BC00E"
+    },
+    "channel-69": {
+      "count": 2,
+      "noble_channels": [
+        "channel-315",
+        "channel-50"
+      ],
+      "usdc_denom": "ibc/5FA12AB6B23F7FC00BFBA3B26E320C91226BF88CC17DA5E088013252C91AEAD1"
+    },
+    "channel-120": {
+      "count": 2,
+      "noble_channels": [
+        "channel-48",
+        "channel-51"
+      ],
+      "usdc_denom": "ibc/92BC8E5C50E6664B4DA748B62C1FFBE321967E1F8868EE03B005977F9AA7C0B8"
+    },
+    "channel-63": {
+      "count": 2,
+      "noble_channels": [
+        "channel-6",
+        "channel-82"
+      ],
+      "usdc_denom": "ibc/3A885CF4256997A923DBE557E916E63651FE080F9E030BC2E622968E2EE81598"
+    },
+    "channel-151": {
+      "count": 2,
+      "noble_channels": [
+        "channel-88",
+        "channel-9"
+      ],
+      "usdc_denom": "ibc/8198819CC2F25B16991D6391826B6BFA50F03AB6B5688C3399BB6A7BD5CCA53C"
+    }
+  }
+}
