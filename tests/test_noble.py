@@ -87,9 +87,11 @@ class TestNoble(unittest.TestCase):
         self.assertEqual(census["collision_groups"], 21)
         self.assertEqual(census["max_collision_size"], 18)
         # channel-0 is the worst: 18 chains all produce the same USDC denom
-        self.assertEqual(census["top_collisions"]["channel-0"], 18)
+        self.assertEqual(census["top_collisions"]["channel-0"]["count"], 18)
+        self.assertIn("dydx", census["top_collisions"]["channel-0"]["chains"])
         # channel-1: 16 chains including Babylon
-        self.assertEqual(census["top_collisions"]["channel-1"], 16)
+        self.assertEqual(census["top_collisions"]["channel-1"]["count"], 16)
+        self.assertIn("babylon", census["top_collisions"]["channel-1"]["chains"])
 
     def test_channel0_mega_collision(self):
         """18 chains share channel-0. All produce the same USDC denom.
