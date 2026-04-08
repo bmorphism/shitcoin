@@ -1,6 +1,6 @@
 import unittest
 
-from shitcoin.monitor import ibc_denom, diff_collisions, fetch_validators, risk_score
+from shitcoin.monitor import ibc_denom, diff_collisions, fetch_validators, risk_score, SUPPLY_AT_RISK
 
 
 class TestMonitor(unittest.TestCase):
@@ -83,3 +83,19 @@ class TestMonitor(unittest.TestCase):
         self.assertEqual(r["rating"], "CRITICAL")
         self.assertIn("hyve_7847-1", r["repeat_offender_chains"])
         self.assertIn("viexchain-1", r["repeat_offender_chains"])
+
+    def test_supply_at_risk(self):
+        """$108M on dYdX under a denom shared by 18 chains."""
+        ch0 = SUPPLY_AT_RISK["channel-0"]
+        self.assertEqual(ch0["collision_chains"], 18)
+        # $108M = 107_993_708_521_499 uusdc
+        usd = ch0["uusdc_on_dydx"] / 1_000_000
+        self.assertGreater(usd, 100_000_000)  # >$100M
+        # The denom matches what we compute
+        self.assertEqual(
+            ch0["denom"],
+            ibc_denom("transfer", "channel-0", "uusdc"),
+        )
+        # Noble total supply
+        noble_usd = SUPPLY_AT_RISK["_noble_supply"]["uusdc"] / 1_000_000
+        self.assertGreater(noble_usd, 150_000_000)  # >$150M

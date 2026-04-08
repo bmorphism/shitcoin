@@ -313,6 +313,41 @@ def collision_profile(scan_result, chain_id):
     }
 
 
+SUPPLY_AT_RISK = {
+    # Live supply data (2026-04-08) for collision denoms
+    # uusdc amounts (divide by 10^6 for USD)
+    "channel-0": {
+        "denom": "ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5",
+        "uusdc_on_dydx": 107_993_708_521_499,  # $108M — shared by 18 chains
+        "collision_chains": 18,
+    },
+    "channel-1": {
+        "denom": "ibc/65D0BEC6DAD96C7F5043D1E54E54B6BB5D5B3AEC3FF6CEBB75B9E059F3580EA3",
+        "uusdc_on_babylon": 620_166_147_573,  # $620K — shared by 16 chains
+        "collision_chains": 16,
+    },
+    "channel-62": {
+        "denom": "ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9",
+        "uusdc_on_kujira": 857_694_331_524,  # $858K
+        "uusdc_on_agoric": 26_647_312_308,   # $26.6K
+        "collision_chains": 3,
+    },
+    # Non-colliding reference points
+    "channel-750": {
+        "denom": "ibc/498A0751C798A0D9A389AA3691123DADA57DAA4FE165D5C75894505B876BA6E4",
+        "uusdc_on_osmosis": 15_864_902_959_007,  # $15.9M — unique, no collision
+        "collision_chains": 1,
+    },
+    "channel-30": {
+        "denom": "ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81",
+        "uusdc_on_neutron": 4_505_659_116_702,  # $4.5M — 2-chain collision
+        "collision_chains": 2,
+    },
+    # Noble total minted
+    "_noble_supply": {"uusdc": 161_815_760_263_796},  # $161.8M
+}
+
+
 def save_baseline(result, path="noble_baseline.json"):
     """Save a scan result as JSON baseline for future diffs."""
     with open(path, "w") as f:
