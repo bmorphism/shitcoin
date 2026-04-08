@@ -120,13 +120,13 @@ def live_collision_census():
     colliding with dYdX, Babylon, and dozens of others.
     """
     return {
-        "total_transfer": 129,
-        "transfer_open": 126,
+        "total_transfer": 157,
+        "transfer_open": 152,
         "total_ica": 369,
         "connections": 203,
         "connections_open": 176,
         "unique_peer_channels": 69,
-        "collision_groups": 21,
+        "collision_groups": 24,
         "max_collision_size": 18,  # channel-0
         "highest_channel": 487,
         "top_collisions": {

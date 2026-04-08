@@ -23,7 +23,10 @@ DEFAULT_API = "https://noble-api.polkachu.com"
 
 def _fetch_json(url):
     """Fetch JSON from a URL. No dependencies beyond stdlib."""
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    req = urllib.request.Request(url, headers={
+        "Accept": "application/json",
+        "User-Agent": "shitcoin-monitor/1.0",
+    })
     with urllib.request.urlopen(req, timeout=30) as resp:
         return json.loads(resp.read())
 

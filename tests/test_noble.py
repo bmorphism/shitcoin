@@ -83,8 +83,8 @@ class TestNoble(unittest.TestCase):
     def test_live_census(self):
         """Live Noble API census (2026-04-07): collision landscape."""
         census = shitcoin.live_collision_census()
-        self.assertEqual(census["total_transfer"], 129)
-        self.assertEqual(census["collision_groups"], 21)
+        self.assertEqual(census["total_transfer"], 157)
+        self.assertEqual(census["collision_groups"], 24)
         self.assertEqual(census["max_collision_size"], 18)
         # channel-0 is the worst: 18 chains all produce the same USDC denom
         self.assertEqual(census["top_collisions"]["channel-0"]["count"], 18)
