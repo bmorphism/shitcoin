@@ -80,6 +80,27 @@ class TestNoble(unittest.TestCase):
         self.assertIn("agoric", collisions["channel-62"]["chains"])
         self.assertTrue(collisions["channel-62"]["denom"].startswith("ibc/"))
 
+    def test_live_census(self):
+        """Live Noble API census (2026-04-07): collision landscape."""
+        census = shitcoin.live_collision_census()
+        self.assertEqual(census["total_transfer"], 129)
+        self.assertEqual(census["collision_groups"], 21)
+        self.assertEqual(census["max_collision_size"], 18)
+        # channel-0 is the worst: 18 chains all produce the same USDC denom
+        self.assertEqual(census["top_collisions"]["channel-0"], 18)
+        # channel-1: 16 chains including Babylon
+        self.assertEqual(census["top_collisions"]["channel-1"], 16)
+
+    def test_channel0_mega_collision(self):
+        """18 chains share channel-0. All produce the same USDC denom.
+        This includes dYdX — the single largest USDC destination."""
+        dydx = shitcoin.ibc_denom("transfer", "channel-0", "uusdc")
+        # Any chain whose first Noble connection is channel-0 gets this denom
+        self.assertEqual(
+            dydx,
+            "ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5",
+        )
+
     def test_unknown_chain_raises(self):
         with self.assertRaises(ValueError):
             shitcoin.noble_usdc_on("rebecca_roberts_chain")

@@ -109,6 +109,43 @@ def detect_collisions():
     return collisions
 
 
+def live_collision_census():
+    """Live Noble API census (2026-04-07).
+
+    129 transfer channels, 69 unique peer channel IDs.
+    21 collision groups. Largest: channel-0 with 18 chains.
+
+    The low channel numbers (0-9) are catastrophic: every new chain
+    that opens its first IBC channel gets channel-0 or channel-1,
+    colliding with dYdX, Babylon, and dozens of others.
+    """
+    return {
+        "total_transfer": 129,
+        "transfer_open": 126,
+        "total_ica": 369,
+        "connections": 203,
+        "connections_open": 176,
+        "unique_peer_channels": 69,
+        "collision_groups": 21,
+        "max_collision_size": 18,  # channel-0
+        "highest_channel": 487,
+        "top_collisions": {
+            "channel-0": 18,
+            "channel-1": 16,
+            "channel-2": 13,
+            "channel-3": 7,
+            "channel-4": 7,
+            "channel-5": 5,
+            "channel-9": 5,
+            "channel-13": 4,
+            "channel-62": 3,
+            "channel-6": 3,
+            "channel-7": 3,
+            "channel-38": 3,
+        },
+    }
+
+
 if __name__ == "__main__":
     print("Noble USDC denoms on peer chains (pre-computed)")
     print("=" * 72)
