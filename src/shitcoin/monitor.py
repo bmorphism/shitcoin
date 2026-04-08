@@ -202,6 +202,35 @@ def diff_collisions(baseline, current):
     }
 
 
+def fetch_validators(api=DEFAULT_API):
+    """Fetch Noble's bonded validator set.
+
+    Noble uses an equal-weight authority set (not proof-of-stake).
+    All validators have 1M tokens. Any 11/16 can sign a block.
+    6 colluding validators = total control of ~$250M USDC.
+    """
+    url = f"{api}/cosmos/staking/v1beta1/validators?status=BOND_STATUS_BONDED&pagination.limit=50"
+    data = _fetch_json(url)
+    validators = []
+    for v in data.get("validators", []):
+        desc = v.get("description", {})
+        validators.append({
+            "moniker": desc.get("moniker", "unknown"),
+            "operator": v.get("operator_address", ""),
+            "website": desc.get("website", ""),
+            "commission": v.get("commission", {}).get("commission_rates", {}).get("rate", "0"),
+            "tokens": v.get("tokens", "0"),
+        })
+    n = len(validators)
+    return {
+        "count": n,
+        "bft_threshold": (n * 2 // 3) + 1,
+        "collude_to_control": (n - 1) // 3 + 1,
+        "equal_weight": len(set(v["tokens"] for v in validators)) == 1,
+        "validators": validators,
+    }
+
+
 def save_baseline(result, path="noble_baseline.json"):
     """Save a scan result as JSON baseline for future diffs."""
     with open(path, "w") as f:

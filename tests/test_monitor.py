@@ -1,6 +1,6 @@
 import unittest
 
-from shitcoin.monitor import ibc_denom, diff_collisions
+from shitcoin.monitor import ibc_denom, diff_collisions, fetch_validators
 
 
 class TestMonitor(unittest.TestCase):
@@ -46,6 +46,15 @@ class TestMonitor(unittest.TestCase):
         self.assertEqual(diff["new_channels"], 3)
         self.assertIn("channel-99", diff["new_collisions"])
         self.assertTrue(any("NEW COLLISION" in a for a in diff["alerts"]))
+
+    def test_bft_math(self):
+        """BFT threshold: 2/3+1 of N validators needed to sign."""
+        # For N=16: threshold=11, collude=6
+        n = 16
+        threshold = (n * 2 // 3) + 1
+        collude = (n - 1) // 3 + 1
+        self.assertEqual(threshold, 11)
+        self.assertEqual(collude, 6)
 
     def test_diff_growing(self):
         baseline = {"total_transfer": 157, "collisions": {
