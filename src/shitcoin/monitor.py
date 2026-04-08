@@ -313,6 +313,18 @@ def collision_profile(scan_result, chain_id):
     }
 
 
+CHANNEL_TRAFFIC = {
+    # next_sequence_send (2026-04-08) — total packets ever sent from Noble
+    "channel-1":   {"chain": "osmosis",    "packets": 929929},
+    "channel-33":  {"chain": "dydx",       "packets": 250336},
+    "channel-18":  {"chain": "neutron",    "packets": 191741},
+    "channel-2":   {"chain": "kujira",     "packets": 96260},
+    "channel-21":  {"chain": "agoric",     "packets": 7254},
+    "channel-81":  {"chain": "babylon",    "packets": 200},
+    "channel-99":  {"chain": "titan",      "packets": 76},
+    "channel-422": {"chain": "hyve_7847",  "packets": 1},   # dormant — 1 init packet only
+}
+
 SUPPLY_AT_RISK = {
     # Live supply data (2026-04-08) for collision denoms
     # uusdc amounts (divide by 10^6 for USD)
