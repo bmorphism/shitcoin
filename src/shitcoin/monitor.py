@@ -287,6 +287,32 @@ def risk_score(scan_result, validator_result=None):
     }
 
 
+def collision_profile(scan_result, chain_id):
+    """Show every collision group a specific chain participates in.
+
+    This reveals "collision farming" — chains that opened sequential
+    channels to Noble and now produce identical USDC denoms as major chains.
+    """
+    collisions = scan_result.get("collisions", {})
+    profile = []
+    for peer_ch, data in collisions.items():
+        chains = data.get("chains", [])
+        if chain_id in chains:
+            others = [c for c in chains if c != chain_id]
+            profile.append({
+                "peer_channel": peer_ch,
+                "collision_size": data["count"],
+                "usdc_denom": data["usdc_denom"],
+                "collides_with": others,
+            })
+    return {
+        "chain_id": chain_id,
+        "collision_groups": len(profile),
+        "collisions": profile,
+        "farming_score": len(profile),  # more groups = more suspicious
+    }
+
+
 def save_baseline(result, path="noble_baseline.json"):
     """Save a scan result as JSON baseline for future diffs."""
     with open(path, "w") as f:
@@ -346,6 +372,35 @@ if __name__ == "__main__":
         print(f"  New collisions: {len(diff['new_collisions'])}")
         print(f"  Growing groups: {len(diff['grown'])}")
         print(f"  New channels: {diff['new_channels']}")
+
+    elif mode == "risk":
+        # Full risk assessment
+        result = scan_collisions(resolve_chains=True, verbose=True)
+        validators = fetch_validators()
+        r = risk_score(result, validators)
+        print(f"\nRISK SCORE: {r['composite']}/100 — {r['rating']}")
+        print(f"  Density:    {r['density']}/25")
+        print(f"  Severity:   {r['severity']}/25")
+        print(f"  Repeaters:  {r['repeaters']}/25")
+        print(f"  Validators: {r['validator_risk']}/25")
+        if r["repeat_offender_chains"]:
+            print(f"\nRepeat offenders:")
+            for chain, count in sorted(r["repeat_offender_chains"].items(), key=lambda x: -x[1]):
+                print(f"  {chain}: {count} collision groups")
+
+    elif mode == "profile":
+        # Collision profile for a specific chain
+        chain_id = sys.argv[2] if len(sys.argv) > 2 else "hyve_7847-1"
+        if not os.path.exists(baseline_path):
+            print(f"No baseline. Run 'scan' first.")
+            sys.exit(1)
+        baseline = load_baseline(baseline_path)
+        p = collision_profile(baseline, chain_id)
+        print(f"\nCollision profile: {chain_id}")
+        print(f"Appears in {p['collision_groups']} collision groups")
+        for c in p["collisions"]:
+            others = [x for x in c["collides_with"] if not x.startswith("error:")][:5]
+            print(f"  {c['peer_channel']} ({c['collision_size']} chains): collides with {', '.join(others)}")
 
     elif mode == "quick":
         # Fast scan without chain resolution
