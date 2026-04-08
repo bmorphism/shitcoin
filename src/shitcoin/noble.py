@@ -87,6 +87,32 @@ def precompute_future(n=100):
     }
 
 
+def chain_fingerprint(chain_id, genesis_hash):
+    """SHA256(chain_id/genesis_hash) → first 16 hex chars.
+    This is the missing authentication predicate: unique per chain."""
+    path = f"{chain_id}/{genesis_hash}"
+    return hashlib.sha256(path.encode("utf-8")).hexdigest()[:16].upper()
+
+
+def authenticated_denom(chain_id, genesis_hash, peer_channel, base_denom="uusdc"):
+    """Compute an authenticated IBC denom that distinguishes colliding chains.
+
+    Returns a dict with:
+      - denom: the standard (collision-prone) IBC denom
+      - fingerprint: SHA256(chain_id/genesis_hash)[:16] — unique per chain
+      - collision?: whether this chain's fingerprint differs from another
+                    chain using the same peer_channel (requires external check)
+    """
+    denom = ibc_denom("transfer", peer_channel, base_denom)
+    fp = chain_fingerprint(chain_id, genesis_hash)
+    return {
+        "denom": denom,
+        "fingerprint": fp,
+        "chain_id": chain_id,
+        "peer_channel": peer_channel,
+    }
+
+
 def detect_collisions():
     """Find registered chains that share the same USDC denom.
 

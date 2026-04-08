@@ -103,6 +103,21 @@ class TestNoble(unittest.TestCase):
             "ibc/8E27BA2D5493AF5636760E354E46004562C46AB7EC0CC4C1CA14E9E20E2545B5",
         )
 
+    def test_authenticated_denom_distinguishes_collisions(self):
+        """chain_fingerprint distinguishes chains that SHA256 path cannot."""
+        dydx = shitcoin.authenticated_denom("dydx-mainnet-1", "genesis-dydx", "channel-0")
+        titan = shitcoin.authenticated_denom("titan_18888-1", "genesis-titan", "channel-0")
+        # Same denom (the vulnerability)
+        self.assertEqual(dydx["denom"], titan["denom"])
+        # Different fingerprint (the fix)
+        self.assertNotEqual(dydx["fingerprint"], titan["fingerprint"])
+
+    def test_chain_fingerprint_deterministic(self):
+        fp1 = shitcoin.chain_fingerprint("osmosis-1", "genesis-osmosis")
+        fp2 = shitcoin.chain_fingerprint("osmosis-1", "genesis-osmosis")
+        self.assertEqual(fp1, fp2)
+        self.assertEqual(len(fp1), 16)  # 16 hex chars
+
     def test_unknown_chain_raises(self):
         with self.assertRaises(ValueError):
             shitcoin.noble_usdc_on("rebecca_roberts_chain")
